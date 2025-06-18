@@ -1,26 +1,39 @@
-#include "OfficialHierarchy.h"
-#include <iostream>
+#include "OfficialHierarchy.h"  
+#include <iostream>           
 
+using namespace std;
+
+
+//Функция для вывода котика
+ 
 void printPixelArt() {
     cout << "\n\n";
-    cout << "   ^__^\n";
-    cout << "  (oo)\\_______\n";
-    cout << "  (__)\\       )\\/\\\n";
-    cout << "      ||----w |\n";
-    cout << "      ||     ||\n";
+    cout << "  /\\_/\\\n";     
+    cout << " ( o.o )\n";      
+    cout << "  > ^ <\n";       
+    cout << "  /   \\\n";      
+    cout << " (     )\n";      
+    cout << "  \"\"\"\"\"\n";  
 }
 
+
 int main() {
-    OfficialHierarchy hierarchy;
+    setlocale(LC_ALL, "ru");
+    OfficialHierarchy hierarchy;  // Создание объекта иерархии
     
     try {
+        // Построение иерархии чиновников
         hierarchy.buildHierarchy();
+        
+        // Нахождение и вывод решения с минимальными взятками
         hierarchy.findMinBribeSolution();
+        
         printPixelArt();
     } catch (const exception& e) {
-        cerr << "Ошибка: " << e.what() << endl;
-        return 1;
+        // Обработка и вывод ошибок
+        cout << "Ошибка: " << e.what() << endl;
+        return 1;  // Возврат кода ошибки
     }
 
-    return 0;
+    return 0;  // Успешное завершение
 }
