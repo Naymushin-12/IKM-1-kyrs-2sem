@@ -1,39 +1,29 @@
-#include "OfficialHierarchy.h"  
-#include <iostream>           
+#include "OfficialHierarchy.h"
+#include <iostream>
 
-using namespace std;
-
-
-//Функция для вывода котика
- 
-void printPixelArt() {
-    cout << "\n\n";
-    cout << "  /\\_/\\\n";     
-    cout << " ( o.o )\n";      
-    cout << "  > ^ <\n";       
-    cout << "  /   \\\n";      
-    cout << " (     )\n";      
-    cout << "  \"\"\"\"\"\n";  
+/* Функция для вывода ASCII-арта котика */
+void printCat() {
+    cout << "\n  /\\_/\\\n ( o.o )\n  > ^ <\n  /   \\\n (     )\n  \"\"\"\"\"\n";
 }
 
-
+/* Точка входа в программу */
 int main() {
-    setlocale(LC_ALL, "ru");
-    OfficialHierarchy hierarchy;  // Создание объекта иерархии
+    OfficialHierarchy hierarchy; // Создаем иерархию чиновников
     
     try {
-        // Построение иерархии чиновников
-        hierarchy.buildHierarchy();
+        // 1. Построение иерархии из консольного ввода
+        hierarchy.buildFromConsole();
         
-        // Нахождение и вывод решения с минимальными взятками
-        hierarchy.findMinBribeSolution();
+        // 2. Поиск и вывод оптимального решения
+        hierarchy.findOptimalBribePath();
         
-        printPixelArt();
+        // 3. Выводим котика как индикатор успешного завершения
+        printCat();
     } catch (const exception& e) {
-        // Обработка и вывод ошибок
-        cout << "Ошибка: " << e.what() << endl;
-        return 1;  // Возврат кода ошибки
+        // Обработка ошибок
+        cerr << "Ошибка: " << e.what() << endl;
+        return 1;
     }
-
-    return 0;  // Успешное завершение
+    
+    return 0;
 }
