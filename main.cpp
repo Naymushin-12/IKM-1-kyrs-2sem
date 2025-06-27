@@ -1,9 +1,16 @@
+// main.cpp
 #include "OfficialHierarchy.h"
 #include <iostream>
 
 /* Функция для вывода ASCII-арта котика */
 void printCat() {
-    cout << "\n  /\\_/\\\n ( o.o )\n  > ^ <\n  /   \\\n (     )\n  \"\"\"\"\"\n";
+    cout << "\n\n";
+    cout << "  /\\_/\\\n";     
+    cout << " ( o.o )\n";      
+    cout << "  > ^ <\n";       
+    cout << "  /   \\\n";      
+    cout << " (     )\n";      
+    cout << "  \"\"\"\"\"\n";
 }
 
 /* Точка входа в программу */
