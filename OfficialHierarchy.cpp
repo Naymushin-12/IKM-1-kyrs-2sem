@@ -1,264 +1,200 @@
-// OfficialHierarchy.cpp
 #include "OfficialHierarchy.h"
 #include <iostream>
 #include <climits>
-#include <sstream>
 
 using namespace std;
 
-/* Конструктор OfficialNode */
-OfficialNode::OfficialNode(int id, int bribe) : id(id), bribeAmount(bribe), subordinatesHead(nullptr) {}
+// Реализация OfficialNode
+OfficialNode::OfficialNode(int id, int bribe) 
+    : id(id), bribeAmount(bribe), boss(nullptr), 
+      firstRequired(nullptr), firstSubordinate(nullptr),
+      nextRequired(nullptr), nextSubordinate(nullptr) {}
 
-/* Установка начальника для текущего чиновника */
+OfficialNode::~OfficialNode() {
+    // Очистка списков выполняется в OfficialHierarchy
+}
+
 void OfficialNode::setBoss(OfficialNode* boss) {
-    if (boss) boss->addSubordinate(this);
+    this->boss = boss;
+    if (boss) {
+        // Добавляем себя в список подчиненных начальника
+        nextSubordinate = boss->firstSubordinate;
+        boss->firstSubordinate = this;
+    }
 }
 
-/* Добавление подчиненного */
-void OfficialNode::addSubordinate(OfficialNode* subordinate) {
-    SubordinateNode* newNode = new SubordinateNode(subordinate);
-    newNode->next = subordinatesHead;
-    subordinatesHead = newNode;
+void OfficialNode::addRequiredOfficial(OfficialNode* req) {
+    req->nextRequired = firstRequired;
+    firstRequired = req;
 }
 
-/* Геттеры */
+void OfficialNode::addSubordinate(OfficialNode* sub) {
+    sub->nextSubordinate = firstSubordinate;
+    firstSubordinate = sub;
+}
+
+// Геттеры OfficialNode
 int OfficialNode::getId() const { return id; }
 int OfficialNode::getBribe() const { return bribeAmount; }
-SubordinateNode* OfficialNode::getSubordinates() const { return subordinatesHead; }
+OfficialNode* OfficialNode::getBoss() const { return boss; }
+OfficialNode* OfficialNode::getFirstRequired() const { return firstRequired; }
+OfficialNode* OfficialNode::getFirstSubordinate() const { return firstSubordinate; }
+OfficialNode* OfficialNode::getNextRequired() const { return nextRequired; }
+OfficialNode* OfficialNode::getNextSubordinate() const { return nextSubordinate; }
 
-/* Деструктор PathList */
-PathList::~PathList() {
-    PathNode* current = head;
-    while (current != nullptr) {
-        PathNode* next = current->next;
-        delete current;
-        current = next;
-    }
-}
+// Реализация PathNode
+PathNode::PathNode(int id, PathNode* next) : id(id), next(next) {}
+PathNode::~PathNode() { delete next; }
+int PathNode::getId() const { return id; }
+PathNode* PathNode::getNext() const { return next; }
+void PathNode::setNext(PathNode* next) { this->next = next; }
 
-/* Добавление узла в конец списка */
-void PathList::addNode(int id) {
-    PathNode* newNode = new PathNode(id);
-    if (tail == nullptr) {
-        head = tail = newNode;
-    } else {
-        tail->next = newNode;
-        tail = newNode;
-    }
-}
-
-/* Создание копии списка */
-PathList* PathList::clone() const {
-    PathList* newList = new PathList();
-    PathNode* current = head;
-    while (current != nullptr) {
-        newList->addNode(current->id);
-        current = current->next;
-    }
-    return newList;
-}
-
-/* Деструктор PathListCollection */
-PathListCollection::~PathListCollection() {
-    PathListNode* current = head;
-    while (current != nullptr) {
-        PathListNode* next = current->next;
-        delete current->data;
-        delete current;
-        current = next;
-    }
-}
-
-/* Добавление пути в коллекцию */
-void PathListCollection::addPath(PathList* path) {
-    PathListNode* newNode = new PathListNode(path);
-    if (head == nullptr) {
-        head = newNode;
-    } else {
-        PathListNode* temp = head;
-        while (temp->next != nullptr) {
-            temp = temp->next;
-        }
-        temp->next = newNode;
-    }
-}
-
-/* Конструктор и деструктор OfficialHierarchy */
-OfficialHierarchy::OfficialHierarchy() : officialsHead(nullptr), root(nullptr) {}
+// Реализация OfficialHierarchy
+OfficialHierarchy::OfficialHierarchy() : root(nullptr), firstOfficial(nullptr) {}
 OfficialHierarchy::~OfficialHierarchy() { clear(); }
 
-/* Очистка иерархии */
 void OfficialHierarchy::clear() {
-    // Удаляем всех чиновников
-    OfficialListNode* current = officialsHead;
+    OfficialNode* current = firstOfficial;
     while (current != nullptr) {
-        OfficialListNode* next = current->next;
-        
-        // Удаляем список подчиненных
-        SubordinateNode* subCurrent = current->data->getSubordinates();
-        while (subCurrent != nullptr) {
-            SubordinateNode* subNext = subCurrent->next;
-            delete subCurrent;
-            subCurrent = subNext;
-        }
-        
-        delete current->data;
+        OfficialNode* next = current->getNextSubordinate();
         delete current;
         current = next;
     }
-    officialsHead = nullptr;
+    firstOfficial = nullptr;
     root = nullptr;
 }
 
-/* Поиск чиновника по ID */
 OfficialNode* OfficialHierarchy::findNode(int id) const {
-    OfficialListNode* current = officialsHead;
+    OfficialNode* current = firstOfficial;
     while (current != nullptr) {
-        if (current->data->getId() == id) {
-            return current->data;
-        }
-        current = current->next;
+        if (current->getId() == id) return current;
+        current = current->getNextSubordinate();
     }
     return nullptr;
 }
 
-/* Рекурсивный поиск всех путей в иерархии */
-void OfficialHierarchy::findAllPaths(OfficialNode* node,
-                                  PathList* currentPath,
-                                  PathListCollection& allPaths,
-                                  int currentSum) const {
-    if (!node) return;
-    
-    // Добавляем текущего чиновника в путь
-    currentPath->addNode(node->getId());
-    currentSum += node->getBribe();
-    
-    // Если это листовой узел (нет подчиненных) - сохраняем путь
-    if (node->getSubordinates() == nullptr) {
-        allPaths.addPath(currentPath->clone());
-        return;
+void OfficialHierarchy::addRequiredDependencies() {
+    // Пример: для подписи 4 нужна подпись 5
+    OfficialNode* official4 = findNode(4);
+    OfficialNode* official5 = findNode(5);
+    if (official4 && official5) {
+        official4->addRequiredOfficial(official5);
     }
-    
-    // Рекурсивно обрабатываем всех подчиненных
-    SubordinateNode* sub = node->getSubordinates();
-    while (sub != nullptr) {
-        findAllPaths(sub->data, currentPath->clone(), allPaths, currentSum);
-        sub = sub->next;
-    }
-    
-    delete currentPath; // Удаляем временный путь
 }
 
-/* Вывод результатов на экран */
-void OfficialHierarchy::printResults(PathList* bestPath, int minBribe) const {
-    cout << "\nМинимальная сумма взяток: " << minBribe << " у.е.\n";
+void OfficialHierarchy::buildFromConsole() {
+    clear();
+    
+    int count;
+    cout << "Введите количество чиновников (1-100): ";
+    cin >> count;
+    
+    // Создаем чиновников
+    for (int i = 1; i <= count; ++i) {
+        int bribe;
+        cout << "Введите взятку для чиновника " << i << ": ";
+        cin >> bribe;
+        
+        OfficialNode* newOfficial = new OfficialNode(i, bribe);
+        newOfficial->addSubordinate(firstOfficial);
+        firstOfficial = newOfficial;
+    }
+    
+    // Строим иерархию
+    for (int i = 1; i <= count; ++i) {
+        int bossId;
+        cout << "Введите начальника для чиновника " << i 
+             << " (0 для главного): ";
+        cin >> bossId;
+        
+        OfficialNode* official = findNode(i);
+        if (bossId == 0) {
+            if (root) throw "Главный чиновник уже назначен";
+            root = official;
+        } else {
+            OfficialNode* boss = findNode(bossId);
+            if (!boss) throw "Неверный ID начальника";
+            official->setBoss(boss);
+        }
+    }
+    
+    if (!root) throw "Главный чиновник не назначен";
+    
+    // Добавляем обязательные зависимости
+    addRequiredDependencies();
+}
+
+void OfficialHierarchy::findAllPaths(OfficialNode* node, PathNode* path, 
+                                  int sum, PathNode*& bestPath, int& minSum) const {
+    if (!node) return;
+
+    // Добавляем текущего чиновника в путь
+    PathNode* newPath = new PathNode(node->getId(), path);
+    sum += node->getBribe();
+
+    // Добавляем обязательные подписи
+    OfficialNode* req = node->getFirstRequired();
+    while (req != nullptr) {
+        findAllPaths(req, newPath, sum, bestPath, minSum);
+        req = req->getNextRequired();
+    }
+
+    // Если это лист и сумма минимальна - сохраняем путь
+    if (node->getFirstSubordinate() == nullptr) {
+        if (sum < minSum) {
+            minSum = sum;
+            delete bestPath;
+            bestPath = newPath;
+            return;
+        }
+    }
+
+    // Обрабатываем подчиненных
+    OfficialNode* sub = node->getFirstSubordinate();
+    while (sub != nullptr) {
+        findAllPaths(sub, newPath, sum, bestPath, minSum);
+        sub = sub->getNextSubordinate();
+    }
+
+    delete newPath; // Удаляем если путь не оптимальный
+}
+
+void OfficialHierarchy::printResults(PathNode* path, int sum) const {
+    cout << "\nМинимальная сумма взяток: " << sum << " у.е.\n";
     cout << "Оптимальный путь: ";
     
-    PathNode* current = bestPath->head;
-    bool first = true;
+    // Разворачиваем список для вывода
+    PathNode* prev = nullptr;
+    PathNode* current = path;
     while (current != nullptr) {
-        if (!first) cout << " -> ";
-        cout << current->id;
-        first = false;
-        current = current->next;
+        PathNode* next = current->getNext();
+        current->setNext(prev);
+        prev = current;
+        current = next;
+    }
+    
+    // Выводим путь
+    current = prev;
+    while (current != nullptr) {
+        if (current != prev) cout << " -> ";
+        cout << current->getId();
+        current = current->getNext();
     }
     cout << endl;
 }
 
-/* Построение иерархии через консольный ввод */
-void OfficialHierarchy::buildFromConsole() {
-    clear(); // Очищаем предыдущую иерархию
-    
-    // Лямбда-функция для безопасного ввода чисел
-    auto readInt = [](const string& prompt, int min, int max) {
-        int value;
-        while (true) {
-            cout << prompt;
-            string input;
-            getline(cin, input);
-            try {
-                value = stoi(input);
-                if (value >= min && value <= max) return value;
-                cout << "Ошибка: число должно быть от " << min << " до " << max << endl;
-            } catch (...) {
-                cout << "Ошибка: введите целое число\n";
-            }
-        }
-    };
-    
-    // Ввод количества чиновников
-    int count = readInt("Введите количество чиновников (1-100): ", 1, 100);
-    
-    // Ввод взяток для каждого чиновника
-    for (int i = 1; i <= count; ++i) {
-        int bribe = readInt("Введите взятку для чиновника " + to_string(i) + ": ", 0, INT_MAX);
-        
-        OfficialNode* newOfficial = new OfficialNode(i, bribe);
-        OfficialListNode* newNode = new OfficialListNode(newOfficial);
-        
-        // Добавляем в начало списка
-        newNode->next = officialsHead;
-        officialsHead = newNode;
-    }
-    
-    // Построение иерархии (указание начальников)
-    OfficialListNode* current = officialsHead;
-    while (current != nullptr) {
-        int id = current->data->getId();
-        int bossId = readInt("Введите начальника для чиновника " + to_string(id) + 
-                            " (0 для главного): ", 0, count);
-        
-        if (bossId == 0) {
-            if (root) throw runtime_error("Главный чиновник уже назначен");
-            root = current->data;
-        } else {
-            OfficialNode* boss = findNode(bossId);
-            if (!boss) throw runtime_error("Неверный ID начальника");
-            current->data->setBoss(boss);
-        }
-        
-        current = current->next;
-    }
-    
-    if (!root) throw runtime_error("Главный чиновник не назначен");
-}
-
-/* Поиск оптимального пути с минимальными взятками */
 void OfficialHierarchy::findOptimalBribePath() const {
-    if (!root) throw runtime_error("Иерархия не построена");
+    if (!root) throw "Иерархия не построена";
     
-    PathListCollection allPaths; // Все возможные пути
-    PathList* currentPath = new PathList(); // Текущий исследуемый путь
+    PathNode* bestPath = nullptr;
+    int minSum = INT_MAX;
     
-    // Находим все возможные пути
-    findAllPaths(root, currentPath, allPaths, 0);
+    findAllPaths(root, nullptr, 0, bestPath, minSum);
     
-    int minBribe = INT_MAX;
-    PathList* bestPath = nullptr;
-    
-    // Ищем путь с минимальной суммой взяток
-    PathListCollection::PathListNode* pathNode = allPaths.head;
-    while (pathNode != nullptr) {
-        int sum = 0;
-        PathNode* node = pathNode->data->head;
-        while (node != nullptr) {
-            OfficialNode* official = findNode(node->id);
-            sum += official->getBribe();
-            node = node->next;
-        }
-        
-        if (sum < minBribe) {
-            minBribe = sum;
-            bestPath = pathNode->data;
-        }
-        
-        pathNode = pathNode->next;
-    }
-    
-    // Выводим результаты
     if (bestPath) {
-        printResults(bestPath, minBribe);
+        printResults(bestPath, minSum);
+        delete bestPath;
     } else {
-        cout << "Пути не найдены" << endl;
+        cout << "Нет доступных путей" << endl;
     }
 }
