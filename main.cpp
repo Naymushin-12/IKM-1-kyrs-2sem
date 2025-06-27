@@ -28,7 +28,7 @@ int main() {
         printCat();
     } catch (const exception& e) {
         // Обработка ошибок
-        cerr << "Ошибка: " << e.what() << endl;
+        cout << "Ошибка: " << e.what() << endl;
         return 1;
     }
     
